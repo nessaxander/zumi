@@ -1,4 +1,4 @@
-package at.htlkaindorf.backend.pojos;
+package at.htlkaindorf.backend.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

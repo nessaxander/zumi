@@ -1,8 +1,9 @@
-package at.htlkaindorf.backend.pojos;
+package at.htlkaindorf.backend.entities;
 
 
 
 
+import at.htlkaindorf.backend.pojos.Department;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import {useNavigate} from "react-router-dom";
 
 function RegisterPage() {
     const [firstName, setFirstName] = useState("");
@@ -8,8 +9,10 @@ function RegisterPage() {
     const [password, setPassword] = useState("");
     const [passwordRepeat, setPasswordRepeat] = useState("");
 
+    const navigate = useNavigate();
+
     const isValidClass = (cls: string): boolean => {
-        return /^[A-Z]{4,5}\d{2}$/.test(cls.trim().toUpperCase());
+        return /^[A-Z]{4,6}\d{2}$/.test(cls.trim().toUpperCase());
     };
 
     const handleRegister = async () => {
@@ -32,23 +35,21 @@ function RegisterPage() {
         };
 
         try {
-            const res = await fetch("http://localhost:8080/api/students", {
+            const res = await fetch("http://localhost:8080/api/students/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
+                credentials: "include",
                 body: JSON.stringify(registerRequest)
             });
 
             if (!res.ok) {
                 const errorText = await res.text();
-                console.error("Backend error:", errorText);
                 alert("Registrierung fehlgeschlagen: " + errorText);
                 return;
             }
 
-            const data = await res.json();
-            console.log("Registrierung erfolgreich:", data);
             alert("Registrierung erfolgreich");
 
             setFirstName("");
@@ -58,9 +59,10 @@ function RegisterPage() {
             setPassword("");
             setPasswordRepeat("");
         } catch (error) {
-            console.error("Fetch error:", error);
+            console.error("Fehler bei Registrierung:", error);
             alert("Registrierung fehlgeschlagen");
         }
+        navigate("/");
     };
 
     return (

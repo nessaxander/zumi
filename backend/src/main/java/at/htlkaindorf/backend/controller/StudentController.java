@@ -3,8 +3,8 @@ package at.htlkaindorf.backend.controller;
 import at.htlkaindorf.backend.dto.RegisterStudentRequest;
 import at.htlkaindorf.backend.dto.StudentResponseDTO;
 import at.htlkaindorf.backend.pojos.Department;
-import at.htlkaindorf.backend.pojos.HTLClass;
-import at.htlkaindorf.backend.pojos.Student;
+import at.htlkaindorf.backend.entities.HTLClass;
+import at.htlkaindorf.backend.entities.Student;
 import at.htlkaindorf.backend.repositories.HTLClassRepository;
 import at.htlkaindorf.backend.repositories.StudentRepository;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/students")
-@CrossOrigin(origins = "http://localhost:5173")
 public class StudentController {
 
     private final StudentRepository studentRepository;
@@ -36,18 +35,18 @@ public class StudentController {
     public List<StudentResponseDTO> getAllStudents() {
         return studentRepository.findAll()
                 .stream()
-                .map(this::mapToDTO)
+                .map(this::mapToStudentResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<StudentResponseDTO> getStudentById(@PathVariable Long id) {
         return studentRepository.findById(id)
-                .map(student -> ResponseEntity.ok(mapToDTO(student)))
+                .map(student -> ResponseEntity.ok(mapToStudentResponseDTO(student)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping
+    @PostMapping("/register")
     public ResponseEntity<?> registerStudent(@RequestBody RegisterStudentRequest request) {
 
         if (request.getFirstName() == null || request.getFirstName().isBlank() ||
@@ -58,11 +57,12 @@ public class StudentController {
             return ResponseEntity.badRequest().body("Alle Felder müssen ausgefüllt sein.");
         }
 
-        if (studentRepository.existsByEmailIgnoreCase(request.getEmail().trim())) {
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        String normalizedClassAcronym = request.getClassAcronym().trim().toUpperCase();
+
+        if (studentRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Diese E-Mail wird bereits verwendet.");
         }
-
-        String normalizedClassAcronym = request.getClassAcronym().trim().toUpperCase();
 
         if (!isValidClassAcronym(normalizedClassAcronym)) {
             return ResponseEntity.badRequest().body("Ungültiges Klassenkürzel.");
@@ -86,7 +86,7 @@ public class StudentController {
         Student student = Student.builder()
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
-                .email(request.getEmail().trim())
+                .email(normalizedEmail)
                 .password(hashedPassword)
                 .department(department)
                 .htlClass(htlClass)
@@ -94,7 +94,7 @@ public class StudentController {
 
         Student savedStudent = studentRepository.save(student);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapToDTO(savedStudent));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToStudentResponseDTO(savedStudent));
     }
 
     @DeleteMapping("/{id}")
@@ -107,7 +107,7 @@ public class StudentController {
         return ResponseEntity.noContent().build();
     }
 
-    private StudentResponseDTO mapToDTO(Student student) {
+    private StudentResponseDTO mapToStudentResponseDTO(Student student) {
         return StudentResponseDTO.builder()
                 .id(student.getId())
                 .firstName(student.getFirstName())
