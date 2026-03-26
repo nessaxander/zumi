@@ -1,6 +1,7 @@
 package at.htlkaindorf.backend.controller;
 
 import at.htlkaindorf.backend.dto.RegisterStudentRequest;
+import at.htlkaindorf.backend.dto.StudentResponseDTO;
 import at.htlkaindorf.backend.pojos.Department;
 import at.htlkaindorf.backend.pojos.HTLClass;
 import at.htlkaindorf.backend.pojos.Student;
@@ -8,9 +9,11 @@ import at.htlkaindorf.backend.repositories.HTLClassRepository;
 import at.htlkaindorf.backend.repositories.StudentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/students")
@@ -19,21 +22,28 @@ public class StudentController {
 
     private final StudentRepository studentRepository;
     private final HTLClassRepository htlClassRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public StudentController(StudentRepository studentRepository, HTLClassRepository htlClassRepository) {
+    public StudentController(StudentRepository studentRepository,
+                             HTLClassRepository htlClassRepository,
+                             PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
         this.htlClassRepository = htlClassRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
-    public List<Student> getAllStudents() {
-        return studentRepository.findAll();
+    public List<StudentResponseDTO> getAllStudents() {
+        return studentRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
+    public ResponseEntity<StudentResponseDTO> getStudentById(@PathVariable Long id) {
         return studentRepository.findById(id)
-                .map(ResponseEntity::ok)
+                .map(student -> ResponseEntity.ok(mapToDTO(student)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -71,17 +81,20 @@ public class StudentController {
                     return htlClassRepository.save(newClass);
                 });
 
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+
         Student student = Student.builder()
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
                 .email(request.getEmail().trim())
-                .password(request.getPassword())
+                .password(hashedPassword)
                 .department(department)
                 .htlClass(htlClass)
                 .build();
 
         Student savedStudent = studentRepository.save(student);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedStudent);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToDTO(savedStudent));
     }
 
     @DeleteMapping("/{id}")
@@ -92,6 +105,17 @@ public class StudentController {
 
         studentRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private StudentResponseDTO mapToDTO(Student student) {
+        return StudentResponseDTO.builder()
+                .id(student.getId())
+                .firstName(student.getFirstName())
+                .lastName(student.getLastName())
+                .classAcronym(student.getHtlClass().getClassAcronym())
+                .email(student.getEmail())
+                .department(student.getDepartment().name())
+                .build();
     }
 
     private boolean isValidClassAcronym(String classAcronym) {
