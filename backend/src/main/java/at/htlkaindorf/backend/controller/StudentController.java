@@ -1,14 +1,21 @@
 package at.htlkaindorf.backend.controller;
 
+import at.htlkaindorf.backend.config.SubjectMapping;
 import at.htlkaindorf.backend.dto.RegisterStudentRequest;
 import at.htlkaindorf.backend.dto.StudentResponseDTO;
+import at.htlkaindorf.backend.dto.StudentSubjectResponseDTO;
 import at.htlkaindorf.backend.pojos.Department;
 import at.htlkaindorf.backend.entities.HTLClass;
 import at.htlkaindorf.backend.entities.Student;
+import at.htlkaindorf.backend.entities.StudentSubject;
+import at.htlkaindorf.backend.entities.Subject;
 import at.htlkaindorf.backend.repositories.HTLClassRepository;
 import at.htlkaindorf.backend.repositories.StudentRepository;
+import at.htlkaindorf.backend.repositories.StudentSubjectRepository;
+import at.htlkaindorf.backend.repositories.SubjectRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,13 +28,19 @@ public class StudentController {
 
     private final StudentRepository studentRepository;
     private final HTLClassRepository htlClassRepository;
+    private final SubjectRepository subjectRepository;
+    private final StudentSubjectRepository studentSubjectRepository;
     private final PasswordEncoder passwordEncoder;
 
     public StudentController(StudentRepository studentRepository,
                              HTLClassRepository htlClassRepository,
+                             SubjectRepository subjectRepository,
+                             StudentSubjectRepository studentSubjectRepository,
                              PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
         this.htlClassRepository = htlClassRepository;
+        this.subjectRepository = subjectRepository;
+        this.studentSubjectRepository = studentSubjectRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -94,7 +107,28 @@ public class StudentController {
 
         Student savedStudent = studentRepository.save(student);
 
+        assignSubjectsToStudent(savedStudent);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToStudentResponseDTO(savedStudent));
+    }
+
+    @GetMapping("/me/subjects")
+    public ResponseEntity<List<StudentSubjectResponseDTO>> getMySubjects(Authentication authentication) {
+        String email = authentication.getName();
+
+        List<StudentSubject> studentSubjects = studentSubjectRepository.findByStudent_Email(email);
+
+        List<StudentSubjectResponseDTO> response = studentSubjects.stream()
+                .map(studentSubject -> StudentSubjectResponseDTO.builder()
+                        .id(studentSubject.getId())
+                        .longName(studentSubject.getSubject().getLongName())
+                        .shortName(studentSubject.getSubject().getShortName())
+                        .semester(studentSubject.getSemester())
+                        .grade(studentSubject.getGrade())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
@@ -107,6 +141,23 @@ public class StudentController {
         return ResponseEntity.noContent().build();
     }
 
+    private void assignSubjectsToStudent(Student student) {
+        List<String> subjectShortNames = SubjectMapping.getSubjectsForDepartment(student.getDepartment());
+
+        List<Subject> subjects = subjectRepository.findByShortNameIn(subjectShortNames);
+
+        List<StudentSubject> studentSubjects = subjects.stream()
+                .map(subject -> StudentSubject.builder()
+                        .student(student)
+                        .subject(subject)
+                        .grade(null)
+                        .semester(1)
+                        .build())
+                .toList();
+
+        studentSubjectRepository.saveAll(studentSubjects);
+    }
+
     private StudentResponseDTO mapToStudentResponseDTO(Student student) {
         return StudentResponseDTO.builder()
                 .id(student.getId())
@@ -114,7 +165,7 @@ public class StudentController {
                 .lastName(student.getLastName())
                 .classAcronym(student.getHtlClass().getClassAcronym())
                 .email(student.getEmail())
-                .department(student.getDepartment().name())
+                .department(student.getDepartment())
                 .build();
     }
 

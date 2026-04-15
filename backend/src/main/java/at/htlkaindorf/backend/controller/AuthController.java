@@ -100,7 +100,7 @@ public class AuthController {
                 .lastName(student.getLastName())
                 .classAcronym(student.getHtlClass().getClassAcronym())
                 .email(student.getEmail())
-                .department(student.getDepartment().name())
+                .department(student.getDepartment())
                 .build();
     }
 }

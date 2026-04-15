@@ -18,10 +18,10 @@ public class Subject {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, name="subject_name_long")
     private String longName;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, name="subject_name_short")
     private String shortName;
 
 

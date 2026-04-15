@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import DashboardSidebar from "../components/DashboardSidebar";
 
 type LoggedInStudent = {
     id: number;
@@ -42,11 +43,7 @@ function DashboardPage() {
         loadMe();
     }, [navigate]);
 
-    if (loading) {
-        return null;
-    }
-
-    if (!student) {
+    if (loading || !student) {
         return null;
     }
 
@@ -54,27 +51,31 @@ function DashboardPage() {
         <div style={styles.page}>
             <Navbar student={student} />
 
-            <main style={styles.main}>
-                <div style={styles.card}>
-                    <h1 style={styles.title}>Dashboard</h1>
-                    <p style={styles.subtitle}>Willkommen zurück, {student.firstName}.</p>
+            <div style={styles.contentWrapper}>
+                <DashboardSidebar />
 
-                    <div style={styles.infoBox}>
-                        <p style={styles.infoText}>
-                            <strong>Voller Name:</strong> {student.firstName} {student.lastName}
-                        </p>
-                        <p style={styles.infoText}>
-                            <strong>E-Mail:</strong> {student.email}
-                        </p>
-                        <p style={styles.infoText}>
-                            <strong>Klasse:</strong> {student.classAcronym}
-                        </p>
-                        <p style={styles.infoText}>
-                            <strong>Abteilung:</strong> {student.department}
-                        </p>
+                <main style={styles.main}>
+                    <div style={styles.card}>
+                        <h1 style={styles.title}>Dashboard</h1>
+                        <p style={styles.subtitle}>Willkommen zurück, {student.firstName}.</p>
+
+                        <div style={styles.infoBox}>
+                            <p style={styles.infoText}>
+                                <strong>Voller Name:</strong> {student.firstName} {student.lastName}
+                            </p>
+                            <p style={styles.infoText}>
+                                <strong>E-Mail:</strong> {student.email}
+                            </p>
+                            <p style={styles.infoText}>
+                                <strong>Klasse:</strong> {student.classAcronym}
+                            </p>
+                            <p style={styles.infoText}>
+                                <strong>Abteilung:</strong> {student.department}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 }
@@ -86,16 +87,18 @@ const styles = {
         color: "white",
         fontFamily: "Arial, sans-serif"
     },
-    main: {
-        minHeight: "calc(100vh - 80px)",
+    contentWrapper: {
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "20px"
+        minHeight: "calc(100vh - 80px)"
+    },
+    main: {
+        flex: 1,
+        padding: "32px",
+        boxSizing: "border-box" as const
     },
     card: {
         width: "100%",
-        maxWidth: "700px",
+        maxWidth: "900px",
         backgroundColor: "rgba(255,255,255,0.08)",
         borderRadius: "20px",
         padding: "40px",

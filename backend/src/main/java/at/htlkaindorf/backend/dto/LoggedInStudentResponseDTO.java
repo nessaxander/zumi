@@ -1,5 +1,6 @@
 package at.htlkaindorf.backend.dto;
 
+import at.htlkaindorf.backend.pojos.Department;
 import lombok.*;
 
 @Getter
@@ -14,5 +15,5 @@ public class LoggedInStudentResponseDTO {
     private String lastName;
     private String classAcronym;
     private String email;
-    private String department;
+    private Department department;
 }
